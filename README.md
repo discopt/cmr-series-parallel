@@ -23,22 +23,22 @@ The `src/cmr` subdirectory contains the subset of the [CMR](https://discopt.gith
 The following steps build the executables from the snapshot but work similarly for the complete library:
 
 ```
-$ mkdir build
-$ cd build
-$ cmake ../src/cmr/ -DGUROBI_DIR=<GUROBI-INSTALLATION-DIR> -DCMAKE_BUILD_TYPE=Release
-$ make
+mkdir build
+cd build
+cmake ../src/cmr/ -DGUROBI_DIR=<GUROBI-INSTALLATION-DIR> -DCMAKE_BUILD_TYPE=Release
+make
 ```
 
 ### Matrices from mixed-integer optimization
 
 1. The following command downloads the MIPLIB 2017 benchmark instance set into the directory `mip-instances`.
    ```
-   % python mip-1-download-miplib.py
+   python mip-1-download-miplib.py
    ```
 
 2. We now extract a large ternary submatrix of each coefficient matrix:
    ```
-% python mip-2-extract-matrices.py mip-instances/* >& mip-2-extract-matrices.log
+   python mip-2-extract-matrices.py mip-instances/* >& mip-2-extract-matrices.log
    ```
 
 ## License
