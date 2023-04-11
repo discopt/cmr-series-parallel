@@ -7,7 +7,7 @@ project(CMR
 option(SHARED "Build shared libraries" OFF)
 set(BUILD_SHARED_LIBS ${SHARED})
 message(STATUS "Build shared libraries: " ${SHARED})
-option(GENERATORS "Compile matrix generators" OFF)
+option(GENERATORS "Compile matrix generators" ON)
 #option(TESTS "Compile tests" ON)
 #message(STATUS "Build tests: " ${TESTS})
 
@@ -158,6 +158,7 @@ if(GENERATORS)
   target_link_libraries(cmr_generate_series_parallel
     PRIVATE
       CMR::cmr
+      m
   )
   set_target_properties(cmr_generate_series_parallel PROPERTIES OUTPUT_NAME cmr-generate-series-parallel)
 
@@ -167,6 +168,7 @@ if(GENERATORS)
   target_link_libraries(cmr_generate_graphic
     PRIVATE
       CMR::cmr
+      m
   )
   set_target_properties(cmr_generate_graphic PROPERTIES OUTPUT_NAME cmr-generate-graphic)
 
@@ -176,6 +178,7 @@ if(GENERATORS)
   target_link_libraries(cmr_generate_network
     PRIVATE
       CMR::cmr
+      m
   )
   set_target_properties(cmr_generate_network PROPERTIES OUTPUT_NAME cmr-generate-network)
 
@@ -185,6 +188,7 @@ if(GENERATORS)
   target_link_libraries(cmr_generate_random
     PRIVATE
       CMR::cmr
+      m
   )
   set_target_properties(cmr_generate_random PROPERTIES OUTPUT_NAME cmr-generate-random)
 
@@ -194,6 +198,7 @@ if(GENERATORS)
   target_link_libraries(cmr_perturb_random
     PRIVATE
       CMR::cmr
+      m
   )
   set_target_properties(cmr_perturb_random PROPERTIES OUTPUT_NAME cmr-perturb-random)
 
@@ -213,6 +218,7 @@ if(GENERATORS)
       PRIVATE
         CMR::cmr
         ${GUROBI_LIBRARIES}
+        m
     )
     set_target_properties(cmr_extract_gurobi PROPERTIES OUTPUT_NAME cmr-extract-gurobi)
     set(GENERATOR_EXECUTABLES ${GENERATOR_EXECUTABLES} cmr_extract_gurobi)
