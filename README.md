@@ -29,9 +29,13 @@ $ make
 
 ### Matrices from mixed-integer optimization
 
-$ cd miplib
-$ ./download.sh
-$ ./extract.sh
+1. The following command downloads the MIPLIB 2017 benchmark instance set into the directory `mip-instances`.
+
+   % python mip-1-download-miplib.py
+
+2. We now extract a large ternary submatrix of each coefficient matrix:
+
+   % python mip-2-extract-matrices.py mip-instances/* >& mip-2-extract-matrices.log
 
 
 ## License
