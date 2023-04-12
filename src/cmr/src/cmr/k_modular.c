@@ -2,6 +2,8 @@
 
 #include "env_internal.h"
 
+#include "interface.h"
+
 CMR_EXPORT
 CMR_ERROR CMRtestUnimodularity(CMR* cmr, CMR_CHRMAT* matrix, bool* pisUnimodular)
 {

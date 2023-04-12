@@ -1028,13 +1028,13 @@ CMR_ERROR createNode(
     CMR_CALL( CMRreallocBlockArray(dec->cmr, &dec->nodes, newSize) );
     for (int v = dec->memNodes + 1; v < newSize; ++v)
       dec->nodes[v].representativeNode = v+1;
-    dec->nodes[newSize-1].representativeNode = -1;
+    dec->nodes[newSize-1].representativeNode = SIZE_MAX;
     dec->firstFreeNode = dec->memNodes + 1;
     node = dec->memNodes;
     dec->memNodes = newSize;
     CMRdbgMsg(12, "createNode enlarges node array to %d and returns node %d.\n", newSize, node);
   }
-  dec->nodes[node].representativeNode = -1;
+  dec->nodes[node].representativeNode = SIZE_MAX;
   dec->numNodes++;
 
   *pnode = node;
@@ -1312,7 +1312,7 @@ CMR_ERROR decCreate(
   dec->numNodes = 0;
   for (size_t v = 0; v < memNodes; ++v)
     dec->nodes[v].representativeNode = v+1;
-  dec->nodes[memNodes-1].representativeNode = -1;
+  dec->nodes[memNodes-1].representativeNode = SIZE_MAX;
   dec->firstFreeNode = 0;
 
   if (memEdges < 1)
@@ -1858,17 +1858,23 @@ CMR_ERROR removeAllPathEdges(
   for (PathEdge* pathEdge = newcolumn->firstPathEdge; pathEdge; pathEdge = pathEdge->nextOverall)
   {
     DEC_EDGE edge = pathEdge->edge;
-    CMRdbgMsg(6, "Removing path edge %d.\n", pathEdge->edge);
+    DEC_NODE tail = dec->edges[edge].tail;
+    if (tail != SIZE_MAX)
+      tail = findNode(dec, tail);
+    DEC_NODE head = dec->edges[edge].head;
+    if (head != SIZE_MAX)
+      head = findNode(dec, head);
+    CMRdbgMsg(6, "Removing path edge %d = {%d,%d}.\n", pathEdge->edge, tail, head);
     newcolumn->edgesInPath[edge] = false;
 
     DEC_MEMBER member = findEdgeMember(dec, edge);
     if (dec->members[member].type == DEC_MEMBER_TYPE_RIGID)
     {
       DEC_NODE tail = findEdgeTail(dec, edge);
-      if (tail >= newcolumn->memNodesDegree)
+      if (tail == SIZE_MAX)
         continue;
       DEC_NODE head = findEdgeHead(dec, edge);
-      if (head >= newcolumn->memNodesDegree)
+      if (head == SIZE_MAX)
         continue;
       newcolumn->nodesDegree[tail] = 0;
       newcolumn->nodesDegree[head] = 0;
@@ -1900,7 +1906,7 @@ CMR_ERROR initializeNewColumn(
 #if defined(CMR_DEBUG)
   for (size_t i = 0; i < newcolumn->memNodesDegree; ++i)
   {
-    if (dec->nodes[i].representativeNode != i)
+    if (dec->nodes[i].representativeNode != SIZE_MAX)
       continue;
 
     if (newcolumn->nodesDegree[i] != 0)
@@ -1910,11 +1916,12 @@ CMR_ERROR initializeNewColumn(
 #endif /* CMR_DEBUG || !NDEBUG */
 
   /* Enlarge nodesDegree array and initialize new portion to zero. */
-  if (newcolumn->memNodesDegree < dec->memNodes)
+  if (newcolumn->memNodesDegree < dec->memNodes + dec->memEdges)
   {
-    size_t newSize = 16 + 2 *newcolumn->memNodesDegree;
-    while (newSize < dec->memNodes)
+    size_t newSize = 16 + 2 * newcolumn->memNodesDegree;
+    while (newSize < dec->memNodes + dec->memEdges)
       newSize *= 2;
+    CMRdbgMsg(6, "Enlarging nodesDegree array to %ld.\n", newSize);
     CMR_CALL( CMRreallocBlockArray(dec->cmr, &newcolumn->nodesDegree, newSize) );
     for (size_t i = newcolumn->memNodesDegree; i < newSize; ++i)
       newcolumn->nodesDegree[i] = 0;
@@ -2321,8 +2328,14 @@ CMR_ERROR createPathEdge(
   {
     CMRdbgMsg(14, "Creating path edge for %d = {%d,%d} in rigid member %d.\n", edge, findEdgeTail(dec, edge),
       findEdgeHead(dec, edge), reducedMember->member);
-    newcolumn->nodesDegree[findEdgeTail(dec, edge)]++;
-    newcolumn->nodesDegree[findEdgeHead(dec, edge)]++;
+    DEC_EDGE tail = findEdgeTail(dec, edge);
+    assert(tail < newcolumn->memNodesDegree);
+    newcolumn->nodesDegree[tail]++;
+    CMRdbgMsg(16, "Increasing node degree of %d to %d.\n", tail, newcolumn->nodesDegree[tail]);
+    DEC_EDGE head = findEdgeHead(dec, edge);
+    assert(head < newcolumn->memNodesDegree);
+    newcolumn->nodesDegree[head]++;
+    CMRdbgMsg(16, "Increasing node degree of %d to %d.\n", head, newcolumn->nodesDegree[head]);
   }
   else
     CMRdbgMsg(14, "Creating path edge for %d in non-rigid member %d.\n", edge, reducedMember->member);
@@ -2731,9 +2744,11 @@ CMR_ERROR determineTypeRigid(
   for (PathEdge* reducedEdge = reducedMember->firstPathEdge; reducedEdge; reducedEdge = reducedEdge->nextSibling)
   {
     DEC_NODE nodes[2] = { findEdgeHead(dec, reducedEdge->edge), findEdgeTail(dec, reducedEdge->edge) };
+    CMRdbgMsg(6 + 2*depth, "Reduced edge {%d,%d}\n", nodes[0], nodes[1]);
     for (int i = 0; i < 2; ++i)
     {
       DEC_NODE v = nodes[i];
+      CMRdbgMsg(6 + 2*depth, "Node %d of rigid member %d has path-degree %d.\n", v, reducedMember->member, newcolumn->nodesDegree[v]);
       if (newcolumn->nodesDegree[v] >= 3)
       {
         CMRdbgMsg(6 + 2*depth, "Node %d of rigid member %d has path-degree at least 3.\n", v, reducedMember->member);
@@ -2769,7 +2784,7 @@ CMR_ERROR determineTypeRigid(
   if (numPathEndNodes == 4)
   {
     DEC_EDGE* nodeEdges = NULL;
-    CMRallocStackArray(dec->cmr, &nodeEdges, 2*dec->memNodes);
+    CMR_CALL(CMRallocStackArray(dec->cmr, &nodeEdges, 2*dec->memNodes));
 
     /* Initialize relevant entries to -1. */
     for (PathEdge* reducedEdge = reducedMember->firstPathEdge; reducedEdge; reducedEdge = reducedEdge->nextSibling)
@@ -5178,11 +5193,12 @@ CMR_ERROR addColumnApply(
 
 static
 CMR_ERROR cographicnessTest(
-  CMR* cmr,               /**< \ref CMR environment. */
-  CMR_CHRMAT* matrix,     /**< Some matrix to be tested for cographicness. */
-  void* data,             /**< Additional data (must be \c NULL). */
-  bool* pisCographic,     /**< Pointer for storing whether \p matrix is cographic. */
-  CMR_SUBMAT** psubmatrix /**< Pointer for storing a proper non-cographic submatrix of \p matrix. */
+  CMR* cmr,                 /**< \ref CMR environment. */
+  CMR_CHRMAT* matrix,       /**< Some matrix to be tested for cographicness. */
+  void* data,               /**< Additional data (must be \c NULL). */
+  bool* pisCographic,       /**< Pointer for storing whether \p matrix is cographic. */
+  CMR_SUBMAT** psubmatrix,  /**< Pointer for storing a proper non-cographic submatrix of \p matrix. */
+  double timeLimit          /**< Time limit to impose. */
 )
 {
   assert(cmr);
@@ -5198,6 +5214,7 @@ CMR_ERROR cographicnessTest(
 
   *pisCographic = true;
   Dec* dec = NULL;
+  clock_t time = clock();
   if (matrix->numNonzeros > 0)
   {
     CMR_CALL( decCreate(cmr, &dec, 4096, 1024, 256, 256, 256) );
@@ -5205,8 +5222,17 @@ CMR_ERROR cographicnessTest(
     /* Process each column. */
     DEC_NEWCOLUMN* newcolumn = NULL;
     CMR_CALL( newcolumnCreate(cmr, &newcolumn) );
+    size_t columnTimeFactor = matrix->numRows / 100 + 1;
     for (size_t column = 0; column < matrix->numRows && *pisCographic; ++column)
     {
+      if ((column % columnTimeFactor == 0) && (clock() - time) * 1.0 / CLOCKS_PER_SEC > timeLimit)
+      {
+        CMR_CALL( newcolumnFree(cmr, &newcolumn) );
+        if (dec)
+          CMR_CALL( decFree(&dec) );
+        return CMR_ERROR_TIMEOUT;
+      }
+      
       CMR_CALL( addColumnCheck(dec, newcolumn, &matrix->entryColumns[matrix->rowSlice[column]],
         matrix->rowSlice[column+1] - matrix->rowSlice[column]) );
 
@@ -5230,7 +5256,7 @@ CMR_ERROR cographicnessTest(
 
 CMR_ERROR CMRtestCographicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisCographic, CMR_GRAPH** pgraph,
   CMR_GRAPH_EDGE** pforestEdges, CMR_GRAPH_EDGE** pcoforestEdges, CMR_SUBMAT** psubmatrix,
-  CMR_GRAPHIC_STATISTICS* stats)
+  CMR_GRAPHIC_STATISTICS* stats, double timeLimit)
 {
   assert(cmr);
   assert(matrix);
@@ -5244,10 +5270,7 @@ CMR_ERROR CMRtestCographicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisCographi
   CMRchrmatPrintDense(cmr, matrix, stdout, '0', true);
 #endif /* CMR_DEBUG */
 
-  clock_t totalClock = 0;
-  if (stats)
-    totalClock = clock();
-
+  clock_t time = clock();
   *pisCographic = true;
 
   Dec* dec = NULL;
@@ -5260,9 +5283,15 @@ CMR_ERROR CMRtestCographicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisCographi
     CMR_CALL( newcolumnCreate(cmr, &newcolumn) );
     for (size_t column = 0; column < matrix->numRows && *pisCographic; ++column)
     {
-      clock_t checkClock;
-      if (stats)
-        checkClock = clock();
+      clock_t checkClock = clock();
+      double remainingTime = timeLimit - (checkClock - time) * 1.0 / CLOCKS_PER_SEC;
+      if (remainingTime < 0)
+      {
+        CMR_CALL( newcolumnFree(cmr, &newcolumn) );
+        if (dec)
+          CMR_CALL( decFree(&dec) );
+        return CMR_ERROR_TIMEOUT;
+      }
       CMR_CALL( addColumnCheck(dec, newcolumn, &matrix->entryColumns[matrix->rowSlice[column]],
         matrix->rowSlice[column+1] - matrix->rowSlice[column]) );
       if (stats)
@@ -5397,13 +5426,14 @@ CMR_ERROR CMRtestCographicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisCographi
   if (!*pisCographic && psubmatrix)
   {
     /* Find submatrix. */
-    CMR_CALL( CMRtestHereditaryPropertySimple(cmr, matrix, cographicnessTest, NULL, psubmatrix) );
+    double remainingTime = timeLimit - (clock() - time) * 1.0 / CLOCKS_PER_SEC;
+    CMR_CALL( CMRtestHereditaryPropertySimple(cmr, matrix, cographicnessTest, NULL, psubmatrix, remainingTime) );
   }
 
   if (stats)
   {
     stats->totalCount++;
-    stats->totalTime += (clock() - totalClock) * 1.0 / CLOCKS_PER_SEC;
+    stats->totalTime += (clock() - time) * 1.0 / CLOCKS_PER_SEC;
   }
 
   return CMR_OKAY;
@@ -5468,7 +5498,7 @@ CMR_ERROR CMRtestBinaryGraphicColumnSubmatrixGreedy(CMR* cmr, CMR_CHRMAT* transp
 
 CMR_ERROR CMRtestGraphicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisGraphic, CMR_GRAPH** pgraph,
   CMR_GRAPH_EDGE** pforestEdges, CMR_GRAPH_EDGE** pcoforestEdges, CMR_SUBMAT** psubmatrix,
-  CMR_GRAPHIC_STATISTICS* stats)
+  CMR_GRAPHIC_STATISTICS* stats, double timeLimit)
 {
   assert(cmr);
   assert(matrix);
@@ -5499,7 +5529,7 @@ CMR_ERROR CMRtestGraphicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisGraphic, C
   }
 
   CMR_CALL( CMRtestCographicMatrix(cmr, transpose, pisGraphic, pgraph, pforestEdges, pcoforestEdges, psubmatrix,
-    stats) );
+    stats, timeLimit) );
 
   if (stats)
     stats->totalTime += transposeTime;
