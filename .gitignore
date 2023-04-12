@@ -1,2 +1,5 @@
 build*/
+*.log
 __pycache__/
+mip-instances
+mip-matrices

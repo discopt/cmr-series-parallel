@@ -34,23 +34,6 @@ def getData(instance, kary):
                         isCamion = False
             except:
                 sys.stderr.write(f'WARNING: File {DIR}/{instance}.{kary}.camion is not present.\n')
-            if isCamion:
-                try:
-                    for line in open(f'{DIR}/{instance}.{kary}.sp.tu', 'r').read().split('\n'):
-                        if line == 'Matrix IS regular.':
-                            isTU = True
-                        elif line == 'Matrix IS NOT regular.':
-                            isTU = False
-                        elif line[:8] == '  total:':
-                            timeSP = float(line.split()[3])
-                except:
-                    sys.stderr.write(f'WARNING: File {DIR}/{instance}.{kary}.sp.tu is not present.\n')
-                try:
-                    for line in open(f'{DIR}/{instance}.{kary}.no-sp.tu', 'r').read().split('\n'):
-                        if line[:8] == '  total:':
-                            timeNoSP = float(line.split()[3])
-                except:
-                    sys.stderr.write(f'WARNING: File {DIR}/{instance}.{kary}.no-sp.tu is not present.\n')
             try:
                 firstLine = gzip.open(f'{DIR}/{instance}.{kary}.reduced.sparse.gz', 'r').read().decode('utf-8').split('\n', 1)[0]
                 spData = list(map(int, firstLine.split()))
@@ -72,6 +55,23 @@ def getData(instance, kary):
 
             except:
                 sys.stderr.write(f'WARNING: File {DIR}/{instance}.{kary}.reduced.sparse.gz is not present.\n')
+            if isCamion and seriesParallel != 2:
+                try:
+                    for line in open(f'{DIR}/{instance}.{kary}.sp.tu', 'r').read().split('\n'):
+                        if line == 'Matrix IS regular.':
+                            isTU = True
+                        elif line == 'Matrix IS NOT regular.':
+                            isTU = False
+                        elif line[:8] == '  total:':
+                            timeSP = float(line.split()[3])
+                except:
+                    sys.stderr.write(f'WARNING: File {DIR}/{instance}.{kary}.sp.tu is not present.\n')
+                try:
+                    for line in open(f'{DIR}/{instance}.{kary}.no-sp.tu', 'r').read().split('\n'):
+                        if line[:8] == '  total:':
+                            timeNoSP = float(line.split()[3])
+                except:
+                    sys.stderr.write(f'WARNING: File {DIR}/{instance}.{kary}.no-sp.tu is not present.\n')
         return { 'rows': data[0], 'columns': data[1], 'nonzeros': data[2], 'trivial': isTrivial, 'camion': isCamion, 'series-parallel': seriesParallel, 'tu': isTU, 'timeSP': timeSP, 'timeNoSP': timeNoSP, 'SP-reduced rows': reducedRows, 'SP-reduced columns': reducedColumns, 'SP-reduced nonzeros': reducedNonzeros }
     except:
         data = [None, None, None]

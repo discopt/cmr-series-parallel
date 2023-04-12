@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 from data_mip import *
 
 CMR_BUILD = './build'
@@ -12,8 +13,8 @@ def run(instance, kary, force):
     if data and not data['trivial'] and data['camion']:
         if data['tu'] is None or force:
             print(f'Checking {kary} version of {instance} for regularity')
-            os.system(f'gzip -cd mip-matrices/{instance}.{kary}.sparse.gz | {CMR_MATRIX} -i sparse - - -c | {CMR_REGULAR} --time-limit {TIME_LIMIT} -i sparse - -s --no-direct-graphic 2> mip-matrices/{instance}.{kary}.sp.tu')
-            os.system(f'gzip -cd mip-matrices/{instance}.{kary}.sparse.gz | {CMR_MATRIX} -i sparse - - -c | {CMR_REGULAR} --time-limit {TIME_LIMIT} -i sparse - -s --no-direct-graphic --no-series-parallel 2> mip-matrices/{instance}.{kary}.no-sp.tu')
+            subprocess.call(f'gzip -cd mip-matrices/{instance}.{kary}.sparse.gz | {CMR_MATRIX} -i sparse - - -c | {CMR_REGULAR} --time-limit {TIME_LIMIT} -i sparse - -s --no-direct-graphic 2> mip-matrices/{instance}.{kary}.sp.tu', shell=True)
+            subprocess.call(f'gzip -cd mip-matrices/{instance}.{kary}.sparse.gz | {CMR_MATRIX} -i sparse - - -c | {CMR_REGULAR} --time-limit {TIME_LIMIT} -i sparse - -s --no-direct-graphic --no-series-parallel 2> mip-matrices/{instance}.{kary}.no-sp.tu', shell=True)
         else:
             print(f'Skipping {kary} version of {instance} because it was already computed.')
     else:
@@ -21,11 +22,11 @@ def run(instance, kary, force):
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        for kary in ['ternary']:#, 'ternary']:
+        for kary in ['binary', 'ternary']:
             for instance in getInstances():
                 run(instance, kary, False)
     else:
-        for kary in ['ternary']: #, 'binary']:
+        for kary in ['binary', 'ternary']:
             for instance in sys.argv[1:]:
                 run(instance, kary, True)
 
