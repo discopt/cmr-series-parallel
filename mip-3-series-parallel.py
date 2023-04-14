@@ -7,8 +7,12 @@ CMR_BUILD = './build/'
 CMR_SERIES_PARALLEL = CMR_BUILD + '/cmr-series-parallel'
 CMR_MATRIX = CMR_BUILD + '/cmr-matrix'
 
+instances = sys.argv[1:]
+if not instances:
+    instances = getInstances()
+
 for kary in ['binary', 'ternary']:
-    for instance in getInstances():
+    for instance in instances:
         data = getData(instance, kary)
         if not data['trivial']:
             print(f'Checking {kary} version of {instance} for SP')
