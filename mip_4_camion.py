@@ -1,7 +1,7 @@
 import os
 import sys
 import subprocess
-from data_mip import *
+from mip_query import *
 
 CMR_BUILD = './build/'
 CMR_CAMION = CMR_BUILD + '/cmr-camion'
@@ -17,7 +17,7 @@ for kary in ['binary', 'ternary']:
         data = getData(instance, kary)
         if not data['trivial']:
             print(f'Checking {kary} version of {instance} for Camion')
-            subprocess.call(f'gzip -cd mip-matrices/{instance}.{kary}.sparse.gz | {CMR_CAMION} --time-limit {TIME_LIMIT} -i sparse - -s 2> mip-matrices/{instance}.{kary}.camion', shell=True)
+            subprocess.call(f'gzip -cd mip_matrices/{instance}.{kary}.sparse.gz | {CMR_CAMION} --time-limit {TIME_LIMIT} -i sparse - -s 2> mip_matrices/{instance}.{kary}.camion', shell=True)
         else:
             print(f'Skipping {kary} version of {instance}')
 

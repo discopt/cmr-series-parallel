@@ -2,7 +2,7 @@ import sys
 import os
 import gzip
 
-DIR='mip-matrices'
+DIR='mip_matrices'
 
 def getInstances():
     return sorted(fileName[:-len('.original.header')] for fileName in os.listdir(DIR) if fileName[-len('.original.header'):] == '.original.header')
@@ -14,7 +14,6 @@ def getOriginalData(instance):
 
 def getData(instance, kary):
     firstLine = gzip.open(f'{DIR}/{instance}.{kary}.sparse.gz', 'r').read().decode('utf-8').split('\n', 1)[0]
-#        print(f'[{firstLine}] is first line in {DIR}/{instance}.{kary}.sparse.gz')
     data = list(map(int, firstLine.split()))
     isTrivial = (data[0] * data[1] * data[2] == 0)
     isCamion = None

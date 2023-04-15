@@ -1,5 +1,9 @@
 build*/
 *.log
 __pycache__/
-mip-instances
-mip-matrices
+mip_instances/
+mip_matrices/
+random_series_parallel/
+random_perturbed/
+random_vary_base/
+random_big_base/

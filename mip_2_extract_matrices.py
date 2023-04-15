@@ -3,7 +3,7 @@ import sys
 import os
 
 try:
-  os.mkdir('mip-matrices')
+  os.mkdir('mip_matrices')
 except:
   pass
 
@@ -19,11 +19,13 @@ for mip in sys.argv[1:]:
     base = mip
   base = os.path.basename(base)
   subprocess.call(f'{CMR_EXTRACT_GUROBI} {mip} -o sparse > {base}.sparse', shell=True)
-  subprocess.call(f'head -n 1 {base}.sparse > mip-matrices/{base}.original.header', shell=True)
+  subprocess.call(f'head -n 1 {base}.sparse > mip_matrices/{base}.original.header', shell=True)
   subprocess.call(f'{CMR_K_ARY} {base}.sparse -R {base}.submat -i sparse -t', shell=True)
-  subprocess.call(f'{CMR_MATRIX} {base}.sparse -S {base}.submat -i sparse -d - | gzip > mip-matrices/{base}.ternary.sparse.gz', shell=True)
+  print(f'Extracting actual submatrix of {base}.sparse according to {base}.submat.', flush=True)
+  subprocess.call(f'{CMR_MATRIX} {base}.sparse -S {base}.submat -i sparse -d - | gzip > mip_matrices/{base}.ternary.sparse.gz', shell=True)
   subprocess.call(f'{CMR_K_ARY} {base}.sparse -R {base}.submat -i sparse -b', shell=True)
-  subprocess.call(f'{CMR_MATRIX} {base}.sparse -S {base}.submat -i sparse -d - | gzip > mip-matrices/{base}.binary.sparse.gz', shell=True)
+  print(f'Extracting actual submatrix of {base}.sparse according to {base}.submat.', flush=True)
+  subprocess.call(f'{CMR_MATRIX} {base}.sparse -S {base}.submat -i sparse -d - | gzip > mip_matrices/{base}.binary.sparse.gz', shell=True)
   os.unlink(f'{base}.sparse')
   os.unlink(f'{base}.submat')
 
