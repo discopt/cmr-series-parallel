@@ -54,7 +54,7 @@ def getData(instance, kary):
 
         except:
             sys.stderr.write(f'WARNING: File {DIR}/{instance}.{kary}.reduced.sparse.gz is not present.\n')
-        if isCamion and seriesParallel != 2:
+        if isCamion:
             try:
                 for line in open(f'{DIR}/{instance}.{kary}.sp.tu', 'r').read().split('\n'):
                     if line == 'Matrix IS regular.':
