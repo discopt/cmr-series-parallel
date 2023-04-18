@@ -34,6 +34,6 @@ for kary in ['binary', 'ternary']:
         open(f'{PREFIX}.sp', 'w').close()
         for i in range(repetitions):
             subprocess.call(f'{CMR_GENERATE_SERIES_PARALLEL} {BASE} {BASE} -p {PROBABILITY} -u {UNIT} {UNIT} -c {COPY} {COPY} {makeTernary} > {PREFIX}-{i}.sparse', shell=True)
-            subprocess.call(f'{CMR_SERIES_PARALLEL} -i sparse {PREFIX}-{i}.sparse {testBinary} -R - -N - -s 2>> {PREFIX}.sp', shell=True)
+            subprocess.call(f'{CMR_SERIES_PARALLEL} -i sparse {PREFIX}-{i}.sparse {testBinary} -R - -N - -s >> {PREFIX}.sp', shell=True)
             os.unlink(f'{PREFIX}-{i}.sparse')
 

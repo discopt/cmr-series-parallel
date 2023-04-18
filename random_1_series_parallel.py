@@ -18,7 +18,7 @@ CMR_NETWORK = CMR_BUILD + '/cmr-network'
 
 N = 10000
 #N = 2000 # for debugging
-repetitions = 1000
+repetitions = 100
 #repetitions = 10 # for debugging
 
 for kary in ['binary', 'ternary']:
@@ -38,8 +38,8 @@ for kary in ['binary', 'ternary']:
         open(f'{PREFIX}.gra', 'w').close()
         for i in range(repetitions):
             subprocess.call(f'{CMR_GENERATE_SERIES_PARALLEL} {BASE} {BASE} -p {PROBABILITY} -u {UNIT} {UNIT} -c {COPY} {COPY} {makeTernary} > {PREFIX}-{i}.sparse', shell=True)
-            subprocess.call(f'{CMR_SERIES_PARALLEL} -i sparse {PREFIX}-{i}.sparse {testBinary} -R - -N - -s 2>> {PREFIX}.sp', shell=True)
+            subprocess.call(f'{CMR_SERIES_PARALLEL} -i sparse {PREFIX}-{i}.sparse {testBinary} -R - -N - -s >> {PREFIX}.sp', shell=True)
             if kary == 'binary':
-                subprocess.call(f'{CMR_GRAPHIC} -i sparse {PREFIX}-{i}.sparse -s 2>> {PREFIX}.gra', shell=True)
+                subprocess.call(f'{CMR_GRAPHIC} -i sparse {PREFIX}-{i}.sparse -s >> {PREFIX}.gra', shell=True)
             os.unlink(f'{PREFIX}-{i}.sparse')
 

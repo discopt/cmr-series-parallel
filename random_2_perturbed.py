@@ -16,7 +16,7 @@ CMR_SERIES_PARALLEL = CMR_BUILD + '/cmr-series-parallel'
 
 N = 10000
 #N = 2000 # for debugging
-repetitions = 1000
+repetitions = 100
 #repetitions = 10 # for debugging
 
 for kary in ['binary', 'ternary']:
@@ -38,7 +38,7 @@ for kary in ['binary', 'ternary']:
         for i in range(repetitions):
             subprocess.call(f'{CMR_GENERATE_SERIES_PARALLEL} {BASE} {BASE} -p {PROBABILITY} -u {UNIT} {UNIT} -c {COPY} {COPY} {makeTernary} > {PREFIX}-{i}.sparse', shell=True)
             subprocess.call(f'{CMR_PERTURB} -i sparse {perturbKary} {PERTURBED} {PREFIX}-{i}.sparse {PREFIX}-{i}-pert.sparse', shell=True)
-            subprocess.call(f'{CMR_SERIES_PARALLEL} -i sparse {PREFIX}-{i}-pert.sparse {testBinary} -R {PREFIX}-{i}-pert.reduced -N - -s 2>> {PREFIX}.sp', shell=True)
+            subprocess.call(f'{CMR_SERIES_PARALLEL} -i sparse {PREFIX}-{i}-pert.sparse {testBinary} -R {PREFIX}-{i}-pert.reduced -N - -s >> {PREFIX}.sp', shell=True)
             os.unlink(f'{PREFIX}-{i}-pert.reduced')
             os.unlink(f'{PREFIX}-{i}.sparse')
             os.unlink(f'{PREFIX}-{i}-pert.sparse')
